@@ -41,7 +41,7 @@ def load_and_preprocess_unsw_nb15(
     cols_to_drop = ['id', 'srcip', 'dstip', 'sport', 'dsport']
 
 
-    #  Cleaning Functions 
+    #  Cleaning Functions 
     def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         """Applies data cleaning steps to a single DataFrame."""
         
@@ -61,7 +61,9 @@ def load_and_preprocess_unsw_nb15(
                 is_finite_mask = np.isfinite(df[col])
                 if (~is_finite_mask).any():
                     max_finite = df[col][is_finite_mask].max()
+                    # Replace positive inf with the max finite value in that column
                     df[col].replace([np.inf], max_finite, inplace=True)
+                    # Replace negative inf with 0
                     df[col].replace([-np.inf], 0, inplace=True)
                     
         return df
@@ -72,7 +74,7 @@ def load_and_preprocess_unsw_nb15(
     print("Data cleaning complete.")
 
 
-    #  One-Hot Encoding and Alignment 
+    #  One-Hot Encoding and Alignment 
     
     # 1. Apply One-Hot Encoding
     train_df_encoded = pd.get_dummies(train_df, columns=categorical_features, prefix=categorical_features, drop_first=False)
@@ -90,7 +92,7 @@ def load_and_preprocess_unsw_nb15(
     print(f"Number of final features after encoding/alignment: {len(feature_cols)}")
 
 
-    #  Separate Features (X) and Labels (y) 
+    #  Separate Features (X) and Labels (y) 
     
     # Binary Classification: y=0 (Normal) or y=1 (Attack)
     y_train_binary = train_df_aligned['label'].values
@@ -101,14 +103,19 @@ def load_and_preprocess_unsw_nb15(
     X_test = test_df_aligned.drop(columns=['label', 'attack_cat']).values
     
     
-    #  Normalize/scale features (MinMaxScaler) 
+    #  Normalize/scale features (MinMaxScaler) 
     scaler = MinMaxScaler()
     
     # 1. FIT the scaler ONLY on the training data
     X_train_scaled = scaler.fit_transform(X_train)
     
-    # 2. TRANSFORM both the training and testing data using the fitted scaler
+    # 2. TRANSFORM the testing data using the fitted scaler
     X_test_scaled = scaler.transform(X_test)
+
+    # Clip the test data to strictly enforce the [0, 1] range.
+    # This prevents values > 1.0 (like 2.0) that happened before since we noticed the test set 
+    # has feature values higher than in the training set
+    X_test_scaled = np.clip(X_test_scaled, 0.0, 1.0)
 
     print(" Data Preparation Complete ")
     
@@ -122,7 +129,7 @@ if __name__ == '__main__':
         print(f"Final X_train shape: {X_train.shape}")
         print(f"Final X_test shape: {X_test.shape}")
         
-        #  save the processed arrays to .npy files 
+        # save the processed arrays to .npy files 
         print("\nSaving final NumPy arrays...")
         
         np.save('X_train_scaled.npy', X_train)
