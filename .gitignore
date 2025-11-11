@@ -1,0 +1,12 @@
+# Exclude the main data directory
+/data/
+
+# Exclude generated NumPy arrays
+X_train_scaled.npy
+X_test_scaled.npy
+y_train_binary.npy
+y_test_binary.npy
+
+# Exclude trained model files
+*.h5
+*.keras
