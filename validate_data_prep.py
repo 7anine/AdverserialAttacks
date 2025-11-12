@@ -1,12 +1,12 @@
 import numpy as np
 
-#  File Paths 
+#  File paths 
 X_TRAIN_FILE = 'X_train_scaled.npy'
 X_TEST_FILE = 'X_test_scaled.npy'
 Y_TRAIN_FILE = 'y_train_binary.npy'
 Y_TEST_FILE = 'y_test_binary.npy'
 
-#  Expected Parameters 
+#  Expected parameters 
 EXPECTED_FEATURES = 190
 EXPECTED_Y_VALUES = {0, 1} # Only binary labels are expected
 
@@ -14,7 +14,7 @@ def validate_npy_files():
     """Loads and validates the shape, dtype, and content of all prepared arrays."""
     print(" Starting NumPy File Validation ")
     
-    #  Load Data 
+    #  Load data 
     try:
         X_train = np.load(X_TRAIN_FILE)
         X_test = np.load(X_TEST_FILE)
@@ -24,45 +24,45 @@ def validate_npy_files():
         print(f"CRITICAL ERROR: File not found ({e}). Did you run data_prep.py?")
         return
     
-    #  1. Validate Shapes and dtypes 
+    #  Validate shapes and dtypes 
     print("\n1. Shape and Data Type Check:")
     
-    # Check X Arrays (Features)
+    # Check X arrays (features)
     for name, arr in [('X_train', X_train), ('X_test', X_test)]:
         # Check dimensions
         if arr.ndim != 2:
-            print(f"❌ {name}: Incorrect dimensions. Expected 2D, got {arr.ndim}D.")
+            print(f"X {name}: Incorrect dimensions. Expected 2D, got {arr.ndim}D.")
         
         # Check feature count
         if arr.shape[1] != EXPECTED_FEATURES:
-            print(f"❌ {name}: Feature count mismatch. Expected {EXPECTED_FEATURES}, got {arr.shape[1]}.")
+            print(f"X {name}: Feature count mismatch. Expected {EXPECTED_FEATURES}, got {arr.shape[1]}.")
         
         # Check data type
         if not np.issubdtype(arr.dtype, np.floating):
-             print(f"❌ {name}: Incorrect dtype. Expected float, got {arr.dtype}.")
+             print(f"X {name}: Incorrect dtype. Expected float, got {arr.dtype}.")
         
         print(f"✅ {name}: Shape {arr.shape}, Dtype {arr.dtype}.")
 
-    # Check Y Arrays (Labels)
+    # Check Y arrays (Labels)
     for name, arr in [('y_train', y_train), ('y_test', y_test)]:
         # Check for 1D or (N, 1) shape
-        # FIX: The original check was `arr.ndim != 1 and arr.shape[1] != 1` which is too strict for 1D.
-        # A 1D array has no arr.shape[1], causing an IndexError. Let's make it robust.
+        # fix: The original check was `arr.ndim != 1 and arr.shape[1] != 1` which is too strict for 1D arrays
+        # A 1D array has no arr.shape[1], causing an IndexError
         is_correct_y_shape = arr.ndim == 1 or (arr.ndim == 2 and arr.shape[1] == 1)
         if not is_correct_y_shape: 
-             print(f"⚠️ {name}: Non-standard shape. Using {arr.shape}.")
+             print(f"Warning: {name}: Non-standard shape. Using {arr.shape}.")
         
         # Check data type
         if not np.issubdtype(arr.dtype, np.integer):
-             print(f"❌ {name}: Incorrect dtype. Expected integer, got {arr.dtype}.")
+             print(f"X {name}: Incorrect dtype. Expected integer, got {arr.dtype}.")
         
-        print(f"✅ {name}: Shape {arr.shape}, Dtype {arr.dtype}.")
+        print(f"OK: {name}: Shape {arr.shape}, Dtype {arr.dtype}.")
 
 
-    #  2. Validate Content (Scaling and Labels) 
+    # Validate content (scaling and labels) 
     print("\n2. Content and Scaling Check:")
 
-    # Check X Scaling (Feature Data)
+    # Check X sScaling (feature data)
     print(f"X_train Min: {X_train.min():.4f} | Max: {X_train.max():.4f}")
     print(f"X_test Min: {X_test.min():.4f} | Max: {X_test.max():.4f}")
     
@@ -74,42 +74,42 @@ def validate_npy_files():
         arr_min = arr.min()
         arr_max = arr.max()
 
-        # FIX 1: Use np.isclose for robust floating-point boundary check.
-        # We need to check if the min is close to or greater than 0, AND max is close to or less than 1.
+        # fix: Use np.isclose for robust floating-point boundary check
+        # We need to check if the min is close to or greater than 0 and max is close to or less than 1
         is_min_ok = arr_min >= -1e-6 # Allow tiny negative margin to account for float imprecision near 0
         is_max_ok = arr_max <= 1.0 + 1e-6 # Allow tiny positive margin to account for float imprecision near 1
 
         is_in_range = is_min_ok and is_max_ok
         
-        # Check 2: Has the data collapsed (min == max)?
+        # check if it has the data collapsed (min == max)?
         # Use np.isclose for float comparison
         is_collapsed = np.isclose(arr_min, arr_max)
 
         if not is_in_range:
-            print(f"❌ Scaling check FAILED for {name}. Values are outside the expected [0, 1] range. (Min: {arr_min:.6f}, Max: {arr_max:.6f})")
+            print(f"X Scaling check FAILED for {name}. Values are outside the expected [0, 1] range. (Min: {arr_min:.6f}, Max: {arr_max:.6f})")
         elif is_collapsed:
-            print(f"⚠️ Scaling check WARNING for {name}. Data appears to have identical min/max values (e.g., all zeros).")
+            print(f"Warning: Scaling check WARNING for {name}. Data appears to have identical min/max values.")
         else:
-            print(f"✅ {name} scaling looks correct ([0, 1] range enforced).")
+            print(f"OK {name} scaling looks correct ([0, 1] range enforced).")
 
     # Run checks
     check_scaling(X_train, 'X_train')
     check_scaling(X_test, 'X_test')
     
     
-    # Check Y Labels (Binary)
+    # Check Y labels (binary)
     y_train_unique = np.unique(y_train)
     y_test_unique = np.unique(y_test)
 
     if set(y_train_unique) != EXPECTED_Y_VALUES or set(y_test_unique) != EXPECTED_Y_VALUES:
-        print(f"❌ Label check FAILED. Expected labels {EXPECTED_Y_VALUES}.")
+        print(f"X Label check FAILED. Expected labels {EXPECTED_Y_VALUES}.")
         print(f"   y_train unique: {y_train_unique}")
         print(f"   y_test unique: {y_test_unique}")
     else:
-        print("✅ Y label content is correct (contains only 0 and 1).")
+        print("OK Y label content is correct (contains only 0 and 1).")
     
-    # Check Class Imbalance (Important for Model Training!)
-    # We must handle the case where a class might be missing (i.e., bincount result is shorter)
+    # Check class imbalance (important for model training!)
+    # We must handle the case where a class might be missing
     
     print(f"\nTraining Class Distribution:")
     train_counts = np.bincount(y_train)
